@@ -36,23 +36,39 @@ const createNewNote = asyncHandler(async (req, res) => {
     if (!user || !title || !text) {
         return res.status(400).json({ message: 'All fields are required' })
     }
-
+/*
     let validUserId;
     try {
         validUserId = mongoose.Types.ObjectId(user);
     } catch (error) {
         return res.status(400).json({ message: 'Invalid user ID format' });
-    }
+    }*/
 
     // Check for duplicate title
-    const duplicate = await Note.findOne({ title }).lean().exec()
+    const duplicate = await Note.findOne({ title }).collation({locale: 'en', strength: 2}).lean().exec()
 
     if (duplicate) {
         return res.status(409).json({ message: 'Duplicate note title' })
     }
 
+    const newNote = new Note({
+        user: user, // Replace with the actual user ID
+        title: title,
+        text: text,
+      });
+
     // Create and store the new note
-    const note = await Note.create({ validUserId, title, text })
+    const note = await Note.create({ user: user, title: title, text: text })
+   /* newNote.save()
+        .then((savedNote) => {
+            console.log("is it over?1")
+             return res.status(201).json({ message: 'New note created' })
+     })
+        .catch((error) => {
+            console.log("is it over2?")
+            return res.status(400).json({ message: 'Invalid note data received' })
+    });
+*/
 
     if (note) { // Created 
         return res.status(201).json({ message: 'New note created' })
@@ -81,7 +97,7 @@ const updateNote = asyncHandler(async (req, res) => {
     }
 
     // Check for duplicate title
-    const duplicate = await Note.findOne({ title }).lean().exec()
+    const duplicate = await Note.findOne({ title }).collation({locale: 'en', strength: 2}).lean().exec()
 
     // Allow renaming of the original note 
     if (duplicate && duplicate?._id.toString() !== id) {
